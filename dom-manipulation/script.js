@@ -482,6 +482,7 @@ function init() {
   } catch {
     showRandomQuote();
   }
+  
   if (addQuoteBtn) addQuoteBtn.addEventListener("click", addQuote);
   if (newQuoteBtn) newQuoteBtn.addEventListener("click", () => {
     if (categorySelect) sessionStorage.setItem(SS_LAST_CATEGORY_KEY, categorySelect.value);

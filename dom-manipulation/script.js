@@ -149,6 +149,15 @@ function filterQuote() {
   renderFilteredList(filtered);
 }
 
+function quoteDisplay() {
+  filterQuote();
+}
+
+function createAddQuoteForm() {
+  if (!addQuoteBtn) return;
+  addQuoteBtn.addEventListener("click", addQuote);
+}
+
 function addQuote() {
   const text = newQuoteTextInput ? newQuoteTextInput.value.trim() : "";
   const category = newQuoteCategoryInput ? newQuoteCategoryInput.value.trim() : "";
@@ -432,7 +441,7 @@ async function syncQuotes() {
     };
   } catch (error) {
     setStatus("Sync failed");
-    alert("Failed to sync with server. Please try again.", "error");
+    showNotification("Failed to sync with server. Please try again.", "error");
     return { success: false, error: error.message };
   }
 }
@@ -448,7 +457,7 @@ function startSync(ms) {
 function clearLocal() {
   localStorage.removeItem(LS_QUOTES_KEY);
   localStorage.removeItem(LS_LAST_FILTER_KEY);
-  alert("Local storage cleared. Reloading page...", "info");
+  showNotification("Local storage cleared. Reloading page...", "info");
   setTimeout(() => location.reload(), 1000);
 }
 
@@ -459,7 +468,7 @@ function resetToDefaults() {
   populateCategories();
   filterQuote();
   displayQuote(quotes[0]);
-  alert("Default quotes restored successfully!", "success");
+  showNotification("Default quotes restored successfully!", "success");
 }
 
 function init() {
@@ -482,8 +491,8 @@ function init() {
   } catch {
     showRandomQuote();
   }
-  
-  if (addQuoteBtn) addQuoteBtn.addEventListener("click", addQuote);
+  createAddQuoteForm();
+  quoteDisplay();
   if (newQuoteBtn) newQuoteBtn.addEventListener("click", () => {
     if (categorySelect) sessionStorage.setItem(SS_LAST_CATEGORY_KEY, categorySelect.value);
     showRandomQuote();

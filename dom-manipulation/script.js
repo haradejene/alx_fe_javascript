@@ -122,7 +122,7 @@ function renderFilteredList(items) {
   });
 }
 
-function filterQuotes() {
+function filterQuote() {
   const val = categoryFilter.value;
   localStorage.setItem(LS_LAST_FILTER_KEY, val);
   const filtered = val === "all" ? quotes : quotes.filter(q => q.category === val);
@@ -149,6 +149,15 @@ function addQuote() {
   newQuoteTextInput.value = "";
   newQuoteCategoryInput.value = "";
   displayQuote(q);
+}
+
+function createAddQuoteForm() {
+  if (!newQuoteTextInput || !newQuoteCategoryInput || !addQuoteBtn) return;
+  addQuoteBtn.addEventListener("click", addQuote);
+}
+
+function quoteDisplay() {
+  filterQuote();
 }
 
 function exportToJson() {
@@ -241,6 +250,10 @@ async function fetchServerQuotes() {
     updatedAt: nowTs - i * 1000,
     pending: false
   }));
+}
+
+async function fetchQuotesFromServer() {
+  return await fetchServerQuotes();
 }
 
 async function pushPendingToServer() {
@@ -385,11 +398,13 @@ function init() {
     showRandomQuote();
   }
 
+  createAddQuoteForm();
+  quoteDisplay();
+
   if (newQuoteBtn) newQuoteBtn.addEventListener("click", () => {
     sessionStorage.setItem(SS_LAST_CATEGORY_KEY, categorySelect.value);
     showRandomQuote();
   });
-  if (addQuoteBtn) addQuoteBtn.addEventListener("click", addQuote);
   if (exportBtn) exportBtn.addEventListener("click", exportToJson);
   if (importBtn) importBtn.addEventListener("click", () => {
     if (importFileInput.files && importFileInput.files[0]) importFromJsonFile(importFileInput.files[0]);

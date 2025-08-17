@@ -1,4 +1,3 @@
-
 const LS_QUOTES_KEY = "dqg_quotes_v3";
 const LS_LAST_FILTER_KEY = "dqg_last_filter_v1";
 const SS_LAST_QUOTE_KEY = "dqg_last_quote_v1";
@@ -65,7 +64,7 @@ function seedDefaults() {
   return [
     { id: uid(), text: "The best way to get started is to quit talking and begin doing.", category: "Motivation", updatedAt: now() - 10000, pending: false },
     { id: uid(), text: "Life is what happens when you're busy making other plans.", category: "Life", updatedAt: now() - 9000, pending: false },
-    { id: uid(), text: "Code is like humor. When you have to explain it, it’s bad.", category: "Programming", updatedAt: now() - 8000, pending: false }
+    { id: uid(), text: "Code is like humor. When you have to explain it, it's bad.", category: "Programming", updatedAt: now() - 8000, pending: false }
   ];
 }
 
@@ -84,7 +83,7 @@ function updateCategoryOptions() {
 }
 
 function displayQuote(q) {
-  if (quoteTextEl) quoteTextEl.textContent = `“${q.text}”`;
+  if (quoteTextEl) quoteTextEl.textContent = `"${q.text}"`;
   if (quoteCategoryEl) quoteCategoryEl.textContent = `— ${q.category}`;
   sessionStorage.setItem(SS_LAST_QUOTE_KEY, JSON.stringify(q));
 }
@@ -337,23 +336,36 @@ function openConflictResolver() {
   alert(`Conflicts resolved. Kept local: ${keptLocal}, accepted server: ${total - keptLocal}`);
 }
 
-async function syncNow() {
+async function syncQuotes() {
   try {
-    setStatus("Syncing…");
-    await pushPendingToServer();
-    const serverQuotes = await fetchServerQuotes();
+    setStatus("Syncing...");
+    const pushedQuotes = await pushPendingToServer();
+    const serverQuotes = await fetchQuotesFromServer();
     mergeServerData(serverQuotes);
     populateCategories();
     filterQuote();
     updateCategoryOptions();
-    setStatus(conflicts.length ? `Synced with ${conflicts.length} conflict(s)` : "Synced");
-  } catch {
+    if (conflicts.length) {
+      setStatus(`Synced with ${conflicts.length} conflict(s)`);
+      const resolveBtn = document.getElementById("resolveConflictsBtn");
+      if (resolveBtn) resolveBtn.style.display = "inline-block";
+    } else {
+      setStatus("Synced successfully");
+    }
+    return { success: true, pushedCount: pushedQuotes.length, serverCount: serverQuotes.length, conflicts: conflicts.length };
+  } catch (error) {
     setStatus("Sync failed");
+    console.error("Sync error:", error);
+    return { success: false, error: error.message };
   }
 }
 
+async function syncNow() {
+  return await syncQuotes();
+}
+
 function startSync(ms) {
-  setInterval(syncNow, ms);
+  setInterval(syncQuotes, ms);
 }
 
 function clearLocal() {
@@ -412,4 +424,3 @@ function init() {
 }
 
 init();
-

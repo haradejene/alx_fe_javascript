@@ -335,31 +335,74 @@ function mergeServerData(serverQuotes) {
   }
 }
 
+function createConflictDialog(conflict) {
+  const dialog = document.createElement('div');
+  dialog.className = 'conflict-dialog';
+  dialog.innerHTML = `
+    <div class="conflict-content">
+      <h3>Conflict Resolution</h3>
+      <p>ID: ${conflict.id}</p>
+      <div class="conflict-option">
+        <h4>Local Version</h4>
+        <p>"${conflict.local.text}"</p>
+        <small>— ${conflict.local.category}</small>
+        <button class="keep-local">Keep Local</button>
+      </div>
+      <div class="conflict-option">
+        <h4>Server Version</h4>
+        <p>"${conflict.server.text}"</p>
+        <small>— ${conflict.server.category}</small>
+        <button class="keep-server">Keep Server</button>
+      </div>
+    </div>
+  `;
+  
+  dialog.querySelector('.keep-local').addEventListener('click', () => {
+    resolveConflict(conflict.id, 'local');
+    dialog.remove();
+  });
+  
+  dialog.querySelector('.keep-server').addEventListener('click', () => {
+    resolveConflict(conflict.id, 'server');
+    dialog.remove();
+  });
+  
+  document.body.appendChild(dialog);
+  return dialog;
+}
+
+function resolveConflict(id, resolution) {
+  const conflict = conflicts.find(c => c.id === id);
+  if (!conflict) return;
+
+  const idx = quotes.findIndex(q => q.id === id);
+  if (idx !== -1) {
+    if (resolution === 'local') {
+      quotes[idx] = { ...conflict.local, updatedAt: now(), pending: true };
+    } else {
+      quotes[idx] = { ...conflict.server, pending: false };
+    }
+    saveQuotes();
+  }
+}
+
 function openConflictResolver() {
   if (!conflicts.length) {
     showNotification("No conflicts to resolve.", "info");
     return;
   }
-  let keptLocal = 0;
-  const total = conflicts.length;
-  conflicts.forEach(c => {
-    const keepLocal = confirm(`Conflict on ${c.id}\n\nLocal:\n"${c.local.text}" — ${c.local.category}\n\nServer:\n"${c.server.text}" — ${c.server.category}\n\nClick OK to keep LOCAL, Cancel to keep SERVER`);
-    if (keepLocal) {
-      const idx = quotes.findIndex(q => q.id === c.id);
-      if (idx !== -1) quotes[idx] = { ...c.local, updatedAt: now(), pending: true };
-      keptLocal++;
-    } else {
-      const idx = quotes.findIndex(q => q.id === c.id);
-      if (idx !== -1) quotes[idx] = { ...c.server, pending: false };
+
+  const conflict = conflicts[0];
+  const dialog = createConflictDialog(conflict);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      dialog.remove();
+      document.removeEventListener('keydown', handleKeyDown);
     }
-  });
-  saveQuotes();
-  populateCategories();
-  filterQuote();
-  const btn = document.getElementById("resolveConflictsBtn");
-  if (btn) btn.style.display = "none";
-  conflicts = [];
-  showNotification(`Resolved ${total} conflict(s): ${keptLocal} kept local, ${total - keptLocal} from server`, "success");
+  };
+
+  document.addEventListener('keydown', handleKeyDown);
 }
 
 async function syncQuotes() {
@@ -375,6 +418,7 @@ async function syncQuotes() {
     if (conflicts.length) {
       setStatus(`Synced with ${conflicts.length} conflict(s)`);
       showNotification(`Quotes synced with server! ${conflicts.length} conflict(s) found.`, "warning");
+      openConflictResolver();
     } else {
       setStatus("Synced successfully");
       showNotification("Quotes synced with server successfully!", "success");
@@ -388,7 +432,7 @@ async function syncQuotes() {
     };
   } catch (error) {
     setStatus("Sync failed");
-    showNotification("Failed to sync with server. Please try again.", "error");
+    alert("Failed to sync with server. Please try again.", "error");
     return { success: false, error: error.message };
   }
 }
@@ -404,7 +448,7 @@ function startSync(ms) {
 function clearLocal() {
   localStorage.removeItem(LS_QUOTES_KEY);
   localStorage.removeItem(LS_LAST_FILTER_KEY);
-  showNotification("Local storage cleared. Reloading page...", "info");
+  alert("Local storage cleared. Reloading page...", "info");
   setTimeout(() => location.reload(), 1000);
 }
 
@@ -415,7 +459,7 @@ function resetToDefaults() {
   populateCategories();
   filterQuote();
   displayQuote(quotes[0]);
-  showNotification("Default quotes restored successfully!", "success");
+  alert("Default quotes restored successfully!", "success");
 }
 
 function init() {

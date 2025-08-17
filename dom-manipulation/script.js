@@ -397,7 +397,7 @@ function resolveConflict(id, resolution) {
 
 function openConflictResolver() {
   if (!conflicts.length) {
-    showNotification("No conflicts to resolve.", "info");
+    alert("No conflicts to resolve.", "info");
     return;
   }
 
@@ -426,11 +426,11 @@ async function syncQuotes() {
     
     if (conflicts.length) {
       setStatus(`Synced with ${conflicts.length} conflict(s)`);
-      showNotification(`Quotes synced with server! ${conflicts.length} conflict(s) found.`, "warning");
+      alert(`Quotes synced with server! ${conflicts.length} conflict(s) found.`, "warning");
       openConflictResolver();
     } else {
       setStatus("Synced successfully");
-      showNotification("Quotes synced with server successfully!", "success");
+      alert("Quotes synced with server successfully!", "success");
     }
     
     return { 
@@ -441,7 +441,7 @@ async function syncQuotes() {
     };
   } catch (error) {
     setStatus("Sync failed");
-    showNotification("Failed to sync with server. Please try again.", "error");
+    alert("Failed to sync with server. Please try again.", "error");
     return { success: false, error: error.message };
   }
 }
@@ -457,7 +457,7 @@ function startSync(ms) {
 function clearLocal() {
   localStorage.removeItem(LS_QUOTES_KEY);
   localStorage.removeItem(LS_LAST_FILTER_KEY);
-  showNotification("Local storage cleared. Reloading page...", "info");
+  alert("Local storage cleared. Reloading page...", "info");
   setTimeout(() => location.reload(), 1000);
 }
 
@@ -468,7 +468,7 @@ function resetToDefaults() {
   populateCategories();
   filterQuote();
   displayQuote(quotes[0]);
-  showNotification("Default quotes restored successfully!", "success");
+  alert("Default quotes restored successfully!", "success");
 }
 
 function init() {
@@ -500,7 +500,7 @@ function init() {
   if (exportBtn) exportBtn.addEventListener("click", exportToJson);
   if (importBtn) importBtn.addEventListener("click", () => {
     if (importFileInput && importFileInput.files && importFileInput.files[0]) importFromJsonFile(importFileInput.files[0]);
-    else showNotification("Choose a JSON file first.", "error");
+    else alert("Choose a JSON file first.", "error");
   });
   if (importFileInput) importFileInput.addEventListener("change", importFromJsonFile);
   if (clearLocalBtn) clearLocalBtn.addEventListener("click", clearLocal);

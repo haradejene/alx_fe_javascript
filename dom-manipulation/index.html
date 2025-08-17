@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dynamic Quote Generator</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    #quoteCard { border: 1px solid #ddd; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    #quoteText { font-size: 1.25rem; margin: 0 0 .25rem; }
+    #quoteCategory { color: #555; font-style: italic; }
+    .row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+    input, select, button { padding: .5rem .75rem; border-radius: 8px; border: 1px solid #ccc; }
+    button { cursor: pointer; }
+    .spacer { height: .75rem; }
+    .muted { color: #666; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>Dynamic Quote Generator</h1>
+
+  <div class="row">
+    <label for="categorySelect">Category:</label>
+    <select id="categorySelect" aria-label="Filter by category"></select>
+    <button id="newQuote">Show New Quote</button>
+  </div>
+
+  <h2>Filter Quotes</h2>
+<select id="categoryFilter" onchange="filterQuotes()">
+  <option value="all">All Categories</option>
+</select>
+<div id="filteredQuotes"></div>
+
+
+  <div id="quoteCard" aria-live="polite" aria-atomic="true">
+    <p id="quoteText">Pick a category or click “Show New Quote”.</p>
+    <div id="quoteCategory" class="muted"></div>
+  </div>
+
+  <h2>Add a Quote</h2>
+  <div class="row" role="form" aria-label="Add new quote">
+    <input id="newQuoteText" type="text" placeholder="Enter a new quote" />
+    <input id="newQuoteCategory" type="text" placeholder="Enter quote category" />
+    <button id="addQuoteBtn">Add Quote</button>
+  </div>
+
+  <div class="spacer"></div>
+
+  <h2>Import & Export</h2>
+  <div class="row">
+    <button id="exportBtn" title="Download your quotes as JSON">Export Quotes (JSON)</button>
+    <input type="file" id="importFile" accept=".json" />
+    <button id="importBtn">Import Selected JSON</button>
+  </div>
+  <p class="muted">Tip: Export creates a <code>.json</code> file you can re-import later.</p>
+
+  <div class="row">
+    <button id="clearLocal" title="Remove all saved quotes from this browser">Clear Local Storage</button>
+    <button id="resetDefaults" title="Restore starter quotes">Reset to Defaults</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

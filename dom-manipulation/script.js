@@ -22,6 +22,18 @@ const resetDefaultsBtn = document.getElementById("resetDefaults");
 const categoryFilter = document.getElementById("categoryFilter");
 const filteredQuotesContainer = document.getElementById("filteredQuotes");
 
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.classList.add('fade-out');
+    setTimeout(() => notification.remove(), 500);
+  }, 3000);
+}
+
 function uid() {
   return "local-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
@@ -141,7 +153,7 @@ function addQuote() {
   const text = newQuoteTextInput ? newQuoteTextInput.value.trim() : "";
   const category = newQuoteCategoryInput ? newQuoteCategoryInput.value.trim() : "";
   if (!text || !category) {
-    alert("Please enter both a quote and a category.");
+    showNotification("Please enter both a quote and a category.", "error");
     return;
   }
   const q = normalizeQuote({ text, category, pending: true, updatedAt: now() });
@@ -153,15 +165,7 @@ function addQuote() {
   if (newQuoteTextInput) newQuoteTextInput.value = "";
   if (newQuoteCategoryInput) newQuoteCategoryInput.value = "";
   displayQuote(q);
-}
-
-function createAddQuoteForm() {
-  if (!addQuoteBtn) return;
-  addQuoteBtn.addEventListener("click", addQuote);
-}
-
-function quoteDisplay() {
-  filterQuote();
+  showNotification("Quote added successfully! Will sync with server soon.", "success");
 }
 
 function exportToJson() {
@@ -175,12 +179,13 @@ function exportToJson() {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  showNotification("Quotes exported successfully!", "success");
 }
 
 function importFromJsonFile(fileOrEvent) {
   const file = fileOrEvent?.target?.files?.[0] || fileOrEvent;
   if (!file) {
-    alert("Choose a JSON file first.");
+    showNotification("Choose a JSON file first.", "error");
     return;
   }
   const r = new FileReader();
@@ -203,10 +208,10 @@ function importFromJsonFile(fileOrEvent) {
       updateCategoryOptions();
       populateCategories();
       filterQuote();
-      alert(`Imported ${added} quote(s).`);
+      showNotification(`Successfully imported ${added} quote(s)!`, "success");
       if (importFileInput) importFileInput.value = "";
     } catch {
-      alert("Invalid JSON file.");
+      showNotification("Invalid JSON file format.", "error");
     }
   };
   r.readAsText(file);
@@ -214,6 +219,30 @@ function importFromJsonFile(fileOrEvent) {
 
 function ensureSyncUI() {
   if (document.getElementById("syncBar")) return;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    .notification {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: white;
+      background: #333;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      transition: opacity 0.5s;
+      max-width: 300px;
+    }
+    .notification.success { background: #4CAF50; }
+    .notification.error { background: #F44336; }
+    .notification.warning { background: #FF9800; }
+    .notification.info { background: #2196F3; }
+    .fade-out { opacity: 0; }
+  `;
+  document.head.appendChild(style);
+
   const bar = document.createElement("div");
   bar.id = "syncBar";
   bar.style.cssText = "position:fixed;bottom:16px;right:16px;display:flex;gap:8px;align-items:center;background:#111;color:#fff;padding:10px 12px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.2);font:14px system-ui";
@@ -245,10 +274,6 @@ async function fetchServerQuotes() {
   const posts = await res.json();
   const nowTs = now();
   return posts.map((p, i) => normalizeQuote({ id: "server-" + p.id, text: (p.body || p.title || "").toString(), category: "Server", updatedAt: nowTs - i * 1000, pending: false }));
-}
-
-async function fetchQuotesFromServer() {
-  return await fetchServerQuotes();
 }
 
 async function pushPendingToServer() {
@@ -306,12 +331,13 @@ function mergeServerData(serverQuotes) {
   if (conflicts.length) {
     const btn = document.getElementById("resolveConflictsBtn");
     if (btn) btn.style.display = "inline-block";
+    showNotification(`${conflicts.length} conflict(s) detected! Please resolve them.`, "warning");
   }
 }
 
 function openConflictResolver() {
   if (!conflicts.length) {
-    alert("No conflicts to resolve.");
+    showNotification("No conflicts to resolve.", "info");
     return;
   }
   let keptLocal = 0;
@@ -333,7 +359,7 @@ function openConflictResolver() {
   const btn = document.getElementById("resolveConflictsBtn");
   if (btn) btn.style.display = "none";
   conflicts = [];
-  alert(`Conflicts resolved. Kept local: ${keptLocal}, accepted server: ${total - keptLocal}`);
+  showNotification(`Resolved ${total} conflict(s): ${keptLocal} kept local, ${total - keptLocal} from server`, "success");
 }
 
 async function syncQuotes() {
@@ -345,17 +371,24 @@ async function syncQuotes() {
     populateCategories();
     filterQuote();
     updateCategoryOptions();
+    
     if (conflicts.length) {
       setStatus(`Synced with ${conflicts.length} conflict(s)`);
-      const resolveBtn = document.getElementById("resolveConflictsBtn");
-      if (resolveBtn) resolveBtn.style.display = "inline-block";
+      showNotification(`Quotes synced with server! ${conflicts.length} conflict(s) found.`, "warning");
     } else {
       setStatus("Synced successfully");
+      showNotification("Quotes synced with server successfully!", "success");
     }
-    return { success: true, pushedCount: pushedQuotes.length, serverCount: serverQuotes.length, conflicts: conflicts.length };
+    
+    return { 
+      success: true, 
+      pushedCount: pushedQuotes.length, 
+      serverCount: serverQuotes.length, 
+      conflicts: conflicts.length 
+    };
   } catch (error) {
     setStatus("Sync failed");
-    console.error("Sync error:", error);
+    showNotification("Failed to sync with server. Please try again.", "error");
     return { success: false, error: error.message };
   }
 }
@@ -371,7 +404,8 @@ function startSync(ms) {
 function clearLocal() {
   localStorage.removeItem(LS_QUOTES_KEY);
   localStorage.removeItem(LS_LAST_FILTER_KEY);
-  alert("Local storage cleared. Reload the page.");
+  showNotification("Local storage cleared. Reloading page...", "info");
+  setTimeout(() => location.reload(), 1000);
 }
 
 function resetToDefaults() {
@@ -381,7 +415,7 @@ function resetToDefaults() {
   populateCategories();
   filterQuote();
   displayQuote(quotes[0]);
-  alert("Defaults restored.");
+  showNotification("Default quotes restored successfully!", "success");
 }
 
 function init() {
@@ -404,8 +438,7 @@ function init() {
   } catch {
     showRandomQuote();
   }
-  createAddQuoteForm();
-  quoteDisplay();
+  if (addQuoteBtn) addQuoteBtn.addEventListener("click", addQuote);
   if (newQuoteBtn) newQuoteBtn.addEventListener("click", () => {
     if (categorySelect) sessionStorage.setItem(SS_LAST_CATEGORY_KEY, categorySelect.value);
     showRandomQuote();
@@ -413,7 +446,7 @@ function init() {
   if (exportBtn) exportBtn.addEventListener("click", exportToJson);
   if (importBtn) importBtn.addEventListener("click", () => {
     if (importFileInput && importFileInput.files && importFileInput.files[0]) importFromJsonFile(importFileInput.files[0]);
-    else alert("Choose a JSON file first.");
+    else showNotification("Choose a JSON file first.", "error");
   });
   if (importFileInput) importFileInput.addEventListener("change", importFromJsonFile);
   if (clearLocalBtn) clearLocalBtn.addEventListener("click", clearLocal);
